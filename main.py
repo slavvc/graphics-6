@@ -39,9 +39,9 @@ class Line:
             ))
     def __getitem__(self, key):
         if key == 0:
-            return self.data[:,0]
+            return Point(self.data[:,0])
         elif key == 1:
-            return self.data[:,1]
+            return Point(self.data[:,1])
 
 class Polygon:
     def __init__(self, *args):
@@ -171,6 +171,9 @@ class Transform:
         return Transform(self.matrix.dot(transform.matrix))
 
     @staticmethod
+    def identity():
+        return Transform(np.identity(4))
+    @staticmethod
     def translate(dx,dy,dz):
         return Transform([
             [1,0,0,dx],
@@ -211,6 +214,22 @@ class Transform:
                 [   0,  0,   1,0],
                 [   0,  0,   0,1]
             ])
+    @staticmethod
+    def rotate_around_line(line, angle):
+        dx = line[1].x() - line[0].x()
+        dy = line[1].y() - line[0].y()
+        dz = line[1].z() - line[0].z()
+        angle_to_yz = np.arctan2(dx, dz)
+        angle_to_xz = np.arctan2(dy, dz)
+        tr = Transform.rotate('y', angle_to_xz).compose(
+            Transform.rotate('x', angle_to_yz)
+        )
+        untr = Transform.rotate('x', -angle_to_yz).compose(
+            Transform.rotate('y', -angle_to_xz)
+        )
+        return untr.compose(
+            Transform.rotate('z', angle)
+        ).compose(tr)
     @staticmethod
     def reflect(plane):
         if plane == 'xy':
@@ -299,11 +318,16 @@ if __name__ == "__main__":
     t = Polyhedron.Octahedron(Point(10,0,0),7)
     # print(t.points)
     c = Camera.iso()
-    with iio.get_writer("test.mp4") as w:
-        for i in range(100):
+    with iio.get_writer("test.gif", fps=30) as w:
+        for i in range(1000):
             tr = Transform.scale(5,5,5).compose(
                 Transform.rotate('x', 0).compose(
-                    Transform.rotate('z', 2*np.pi*i/100)
+                    # Transform.rotate('z', 2*np.pi*i/100)
+                    # Transform.identity()
+                    Transform.rotate_around_line(
+                        Line(Point(0,0,0), Point(1-i/1000,0,i/1000)),
+                        2*np.pi*i/100
+                    )
                 )
             )
             tr = Transform.reflect('yz').compose(tr)
