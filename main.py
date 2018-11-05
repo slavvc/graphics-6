@@ -3,7 +3,7 @@ import tkinter as tk
 import lib
 import numpy as np
 
-
+size = (200,400)
 
 class Prog:
     def __init__(self, root):
@@ -25,8 +25,8 @@ class Prog:
         self.transform_mode_var = tk.IntVar()
 
 
-        self.view = tk.Label(root, width=200, height=200)
-        self.view.grid(row=0, column=0, rowspan=10)
+        self.view = tk.Label(root, width=size[0], height=size[1])
+        self.view.grid(row=0, column=0, rowspan=16)
 
         # Camera
 
@@ -123,7 +123,7 @@ class Prog:
             transformed = self.polyhedron.apply_transform(self.transform)
         else:
             transformed = self.polyhedron.apply_relative_transform(self.transform)
-        self.im = self.camera.draw((200,200), transformed.points, transformed.sides)
+        self.im = self.camera.draw(size, transformed.points, transformed.sides)
         # self.im.show()
         self.pim = ImageTk.PhotoImage(self.im)
         self.view.configure(image=self.pim)
