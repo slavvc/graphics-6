@@ -1,6 +1,7 @@
 from PIL import ImageTk
 import tkinter as tk
 import lib
+import numpy as np
 
 
 
@@ -10,14 +11,25 @@ class Prog:
 
         self.polyhedron = lib.Polyhedron.Cube(lib.Point(0,0,0), 100)
         self.camera = lib.Camera.ortho()
-        self.transform = lib.Transform.translate(0,10,0)
+        self.transform = lib.Transform.identity()
+
+        self.camera_var = tk.IntVar()
+        self.persp_k_var = tk.StringVar()
+        self.iso_a_var = tk.StringVar()
+        self.iso_b_var = tk.StringVar()
+        self.object_var = tk.IntVar()
+        self.radius_var = tk.StringVar()
+        self.position_x_var = tk.StringVar()
+        self.position_y_var = tk.StringVar()
+        self.position_z_var = tk.StringVar()
+        self.transform_mode_var = tk.IntVar()
 
 
         self.view = tk.Label(root, width=200, height=200)
         self.view.grid(row=0, column=0, rowspan=10)
 
-        # tk.Button(text='button').grid(row=0,column=1)
-        self.camera_var = tk.IntVar()
+        # Camera
+
         self.camera_var.trace('w', self.set_camera)
         tk.Label(root, text='Camera:').grid(row=0, column=1)
         tk.Radiobutton(
@@ -28,7 +40,7 @@ class Prog:
             root, text='persp', variable=self.camera_var, value=1
         ).grid(row=2, column=2)
         tk.Label(root, text='k:').grid(row=2, column=3)
-        self.persp_k_var = tk.StringVar()
+
         self.persp_k_var.trace('w', self.read_persp_k)
         tk.Entry(root, textvar=self.persp_k_var).grid(row=2, column=4)
 
@@ -36,15 +48,16 @@ class Prog:
             root, text='iso', variable=self.camera_var, value=2
         ).grid(row=3, column=2)
         tk.Label(root, text='a:').grid(row=3, column=3)
-        self.iso_a_var = tk.StringVar()
+
         self.iso_a_var.trace('w', self.read_iso_a_b)
         tk.Entry(root, textvar=self.iso_a_var).grid(row=3, column=4)
         tk.Label(root, text='b:').grid(row=3, column=5)
-        self.iso_b_var = tk.StringVar()
+
         self.iso_b_var.trace('w', self.read_iso_a_b)
         tk.Entry(root, textvar=self.iso_b_var).grid(row=3, column=6)
 
-        self.object_var = tk.IntVar()
+        # Object
+
         self.object_var.trace('w', self.set_object)
         tk.Label(root, text='Object:').grid(row=4, column=1)
         tk.Radiobutton(
@@ -57,15 +70,14 @@ class Prog:
             root, text='Octahedron', variable=self.object_var, value=2
         ).grid(row=7, column=2)
 
-        self.radius_var = tk.StringVar()
+
         self.radius_var.set(100)
         self.radius_var.trace('w', self.set_object)
         tk.Label(root, text='radius:').grid(row=4, column=3)
         tk.Entry(root, textvariable=self.radius_var).grid(row=4, column=4)
 
-        self.position_x_var = tk.StringVar()
-        self.position_y_var = tk.StringVar()
-        self.position_z_var = tk.StringVar()
+        # Position
+
         self.position_x_var.trace('w', self.set_object)
         self.position_y_var.trace('w', self.set_object)
         self.position_z_var.trace('w', self.set_object)
@@ -80,13 +92,51 @@ class Prog:
         tk.Label(root, text='z:').grid(row=9, column=6)
         tk.Entry(root, textvariable=self.position_z_var).grid(row=9, column=7)
 
+        # Transform
+        tk.Label(root, text='Transform:').grid(row=10, column=1)
+
+        self.transform_mode_var.trace('w', self.draw)
+        tk.Radiobutton(
+            root, text='Global', variable=self.transform_mode_var, value=0
+        ).grid(row=10, column=2)
+        tk.Radiobutton(
+            root, text='Local', variable=self.transform_mode_var, value=1
+        ).grid(row=10, column=3)
+        # # Matrix
+        tk.Label(root, text='Matrix:').grid(row=11, column=2)
+        self.matrix_vars = []
+        self.matrix_values = np.zeros((4,4))
+        for i in range(4):
+            self.matrix_vars.append([])
+            for j in range(4):
+                self.matrix_vars[i].append(tk.StringVar())
+                self.matrix_values[i][j] = (1 if i==j else 0)
+                tk.Entry(root, textvar=self.matrix_vars[i][j]).grid(
+                    row=12+i, column=3+j
+                )
+                self.matrix_vars[i][j].set(1 if i==j else 0)
+                self.matrix_vars[i][j].trace('w', self.read_matrix)
+
         self.draw()
-    def draw(self):
-        transformed = self.polyhedron.apply_transform(self.transform)
+    def draw(self, *args):
+        if self.transform_mode_var.get() == 0:
+            transformed = self.polyhedron.apply_transform(self.transform)
+        else:
+            transformed = self.polyhedron.apply_relative_transform(self.transform)
         self.im = self.camera.draw((200,200), transformed.points, transformed.sides)
         # self.im.show()
         self.pim = ImageTk.PhotoImage(self.im)
         self.view.configure(image=self.pim)
+
+    def read_matrix(self, *args):
+        try:
+            for i in range(4):
+                for j in range(4):
+                    self.matrix_values[i][j] = float(self.matrix_vars[i][j].get())
+            self.transform = lib.Transform(self.matrix_values)
+        except:
+            self.transform = lib.Transform.identity()
+        self.draw()
 
     def read_persp_k(self, *args):
         try:
