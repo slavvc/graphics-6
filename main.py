@@ -35,7 +35,7 @@ class Prog:
 
 
         self.view = tk.Label(root, width=size[0], height=size[1])
-        self.view.grid(row=0, column=0, rowspan=16)
+        self.view.grid(row=0, column=0, rowspan=18)
 
         # Camera
 
@@ -194,7 +194,7 @@ class Prog:
         tmp_fr = self.transform_choice_frames[-1][0]
         tk.Label(tmp_fr, text='No params here').grid(row=0, column=0)
         # # # # reflect
-        self.transform_choice_frames.append((tk.Frame(), (1,1)))
+        self.transform_choice_frames.append((tk.Frame(), (1,2)))
         tmp_fr = self.transform_choice_frames[-1][0]
         tk.Label(tmp_fr, text='plane:').grid(row=0, column=0)
         self.transform_choice_reflect_var = tk.StringVar()
