@@ -3,7 +3,7 @@ import tkinter as tk
 import lib
 import numpy as np
 
-size = (200,400)
+size = (400,400)
 
 class Prog:
     def __init__(self, root):
@@ -12,6 +12,9 @@ class Prog:
         self.polyhedron = lib.Polyhedron.Cube(lib.Point(0,0,0), 100)
         self.camera = lib.Camera.ortho()
         self.transform = lib.Transform.identity()
+        self.matrix_transform = lib.Transform.identity()
+        self.choice_transform = lib.Transform.identity()
+
 
         self.camera_var = tk.IntVar()
         self.persp_k_var = tk.StringVar()
@@ -23,6 +26,12 @@ class Prog:
         self.position_y_var = tk.StringVar()
         self.position_z_var = tk.StringVar()
         self.transform_mode_var = tk.IntVar()
+        self.transform_choice_var = tk.StringVar()
+
+        self.transform_choice_list = [
+            'identity', 'translate','rotate',
+            'scale', 'rotate_around_line', 'reflect'
+        ]
 
 
         self.view = tk.Label(root, width=size[0], height=size[1])
@@ -117,8 +126,73 @@ class Prog:
                 self.matrix_vars[i][j].set(1 if i==j else 0)
                 self.matrix_vars[i][j].trace('w', self.read_matrix)
 
+        # # Choose
+        self.transform_choice_var.set(self.transform_choice_list[0])
+        self.transform_choice_current = 0
+        tk.Label(root, text='Choose:').grid(row=16, column=2)
+        tk.OptionMenu(root, self.transform_choice_var, *self.transform_choice_list)\
+        .grid(row=16, column=3)
+
+        # # # Choice frames
+        self.transform_choice_frames = []
+        self.transform_choice_var.trace('w', self.change_transform_choice)
+        # # # # identity
+        self.transform_choice_frames.append((tk.Frame(), (1,1)))
+        tmp_fr = self.transform_choice_frames[-1][0]
+        tk.Label(tmp_fr, text='No params here').grid(row=0, column=0)
+        # # # # translate
+        self.transform_choice_frames.append((tk.Frame(), (1,6)))
+        tmp_fr = self.transform_choice_frames[-1][0]
+        self.transform_choice_translate_vars = []
+        self.transform_choice_translate_vars.append(tk.StringVar())
+        tk.Label(tmp_fr, text='x:').grid(row=0, column=0)
+        tk.Entry(tmp_fr, textvar=self.transform_choice_translate_vars[-1])\
+        .grid(row=0, column=1)
+        self.transform_choice_translate_vars.append(tk.StringVar())
+        tk.Label(tmp_fr, text='y:').grid(row=0, column=2)
+        tk.Entry(tmp_fr, textvar=self.transform_choice_translate_vars[-1])\
+        .grid(row=0, column=3)
+        self.transform_choice_translate_vars.append(tk.StringVar())
+        tk.Label(tmp_fr, text='z:').grid(row=0, column=4)
+        tk.Entry(tmp_fr, textvar=self.transform_choice_translate_vars[-1])\
+        .grid(row=0, column=5)
+        for v in self.transform_choice_translate_vars:
+            v.trace('w', self.read_transform_choice_translate)
+        # # # # rotate
+        self.transform_choice_frames.append((tk.Frame(), (1,1)))
+        tmp_fr = self.transform_choice_frames[-1][0]
+        tk.Label(tmp_fr, text='No params here').grid(row=0, column=0)
+        # # # # scale
+        self.transform_choice_frames.append((tk.Frame(), (1,6)))
+        tmp_fr = self.transform_choice_frames[-1][0]
+        self.transform_choice_scale_vars = []
+        self.transform_choice_scale_vars.append(tk.StringVar())
+        tk.Label(tmp_fr, text='sx:').grid(row=0, column=0)
+        tk.Entry(tmp_fr, textvar=self.transform_choice_scale_vars[-1])\
+        .grid(row=0, column=1)
+        self.transform_choice_scale_vars.append(tk.StringVar())
+        tk.Label(tmp_fr, text='sy:').grid(row=0, column=2)
+        tk.Entry(tmp_fr, textvar=self.transform_choice_scale_vars[-1])\
+        .grid(row=0, column=3)
+        self.transform_choice_scale_vars.append(tk.StringVar())
+        tk.Label(tmp_fr, text='sz:').grid(row=0, column=4)
+        tk.Entry(tmp_fr, textvar=self.transform_choice_scale_vars[-1])\
+        .grid(row=0, column=5)
+        for v in self.transform_choice_scale_vars:
+            v.trace('w', self.read_transform_choice_scale)
+        # # # # rotate_around_line
+        self.transform_choice_frames.append((tk.Frame(), (1,1)))
+        tmp_fr = self.transform_choice_frames[-1][0]
+        tk.Label(tmp_fr, text='No params here').grid(row=0, column=0)
+        # # # # reflect
+        self.transform_choice_frames.append((tk.Frame(), (1,1)))
+        tmp_fr = self.transform_choice_frames[-1][0]
+        tk.Label(tmp_fr, text='No params here').grid(row=0, column=0)
+        self.change_transform_choice()
+
         self.draw()
     def draw(self, *args):
+        self.transform = self.matrix_transform.compose(self.choice_transform)
         if self.transform_mode_var.get() == 0:
             transformed = self.polyhedron.apply_transform(self.transform)
         else:
@@ -128,14 +202,51 @@ class Prog:
         self.pim = ImageTk.PhotoImage(self.im)
         self.view.configure(image=self.pim)
 
+    def read_transform_choice_translate(self, *args):
+        xyz = []
+        try:
+            for i in range(3):
+                xyz.append(float(self.transform_choice_translate_vars[i].get()))
+        except:
+            xyz = [0]*3
+        self.choice_transform = lib.Transform.translate(*xyz)
+        self.draw()
+
+    def read_transform_choice_scale(self, *args):
+        xyz = []
+        try:
+            for i in range(3):
+                xyz.append(float(self.transform_choice_scale_vars[i].get()))
+        except:
+            xyz = [1]*3
+        self.choice_transform = lib.Transform.scale(*xyz)
+        self.draw()
+
+    def change_transform_choice(self, *args):
+        tr = self.transform_choice_var.get()
+        idx = self.transform_choice_list.index(tr)
+        self.transform_choice_frames[self.transform_choice_current][0].grid_forget()
+        fr, size = self.transform_choice_frames[idx]
+        fr.grid(row=17, column=3, rowspan=size[0], columnspan=size[1])
+        self.transform_choice_current = idx
+        self.choice_transform = lib.Transform.identity()
+        if idx == 1:
+            self.read_transform_choice_translate()
+        elif idx == 2:
+            pass
+        elif idx == 3:
+            self.read_transform_choice_scale()
+
+        self.draw()
+
     def read_matrix(self, *args):
         try:
             for i in range(4):
                 for j in range(4):
                     self.matrix_values[i][j] = float(self.matrix_vars[i][j].get())
-            self.transform = lib.Transform(self.matrix_values)
+            self.matrix_transform = lib.Transform(self.matrix_values)
         except:
-            self.transform = lib.Transform.identity()
+            self.matrix_transform = lib.Transform.identity()
         self.draw()
 
     def read_persp_k(self, *args):
