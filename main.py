@@ -159,9 +159,18 @@ class Prog:
         for v in self.transform_choice_translate_vars:
             v.trace('w', self.read_transform_choice_translate)
         # # # # rotate
-        self.transform_choice_frames.append((tk.Frame(), (1,1)))
+        self.transform_choice_frames.append((tk.Frame(), (1,4)))
         tmp_fr = self.transform_choice_frames[-1][0]
-        tk.Label(tmp_fr, text='No params here').grid(row=0, column=0)
+        self.transform_choice_rotate_vars = [tk.StringVar(), tk.StringVar()]
+        tk.Label(tmp_fr, text='axis:').grid(row=0, column=0)
+        tk.OptionMenu(tmp_fr, self.transform_choice_rotate_vars[0], 'x','y','z')\
+        .grid(row=0, column=1)
+        self.transform_choice_rotate_vars[0].set('x')
+        tk.Label(tmp_fr, text="angle (radians):").grid(row=0, column=2)
+        tk.Entry(tmp_fr, textvariable=self.transform_choice_rotate_vars[1])\
+        .grid(row=0, column=3)
+        for v in self.transform_choice_rotate_vars:
+            v.trace('w', self.read_transform_choice_rotate)
         # # # # scale
         self.transform_choice_frames.append((tk.Frame(), (1,6)))
         tmp_fr = self.transform_choice_frames[-1][0]
@@ -187,7 +196,13 @@ class Prog:
         # # # # reflect
         self.transform_choice_frames.append((tk.Frame(), (1,1)))
         tmp_fr = self.transform_choice_frames[-1][0]
-        tk.Label(tmp_fr, text='No params here').grid(row=0, column=0)
+        tk.Label(tmp_fr, text='plane:').grid(row=0, column=0)
+        self.transform_choice_reflect_var = tk.StringVar()
+        tk.OptionMenu(tmp_fr, self.transform_choice_reflect_var, 'xy', 'xz', 'yz')\
+        .grid(row=0, column=1)
+        self.transform_choice_reflect_var.set('xy')
+        self.transform_choice_reflect_var.trace('w', self.read_transform_choice_reflect)
+
         self.change_transform_choice()
 
         self.draw()
@@ -201,6 +216,20 @@ class Prog:
         # self.im.show()
         self.pim = ImageTk.PhotoImage(self.im)
         self.view.configure(image=self.pim)
+
+    def read_transform_choice_reflect(self, *args):
+        plane = self.transform_choice_reflect_var.get()
+        self.choice_transform = lib.Transform.reflect(plane)
+        self.draw()
+
+    def read_transform_choice_rotate(self, *args):
+        ax = self.transform_choice_rotate_vars[0].get()
+        try:
+            angle = float(self.transform_choice_rotate_vars[1].get())
+        except:
+            angle = 0
+        self.choice_transform = lib.Transform.rotate(ax, angle)
+        self.draw()
 
     def read_transform_choice_translate(self, *args):
         xyz = []
@@ -233,9 +262,11 @@ class Prog:
         if idx == 1:
             self.read_transform_choice_translate()
         elif idx == 2:
-            pass
+            self.read_transform_choice_rotate()
         elif idx == 3:
             self.read_transform_choice_scale()
+        elif idx == 5:
+            self.read_transform_choice_reflect()
 
         self.draw()
 
