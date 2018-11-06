@@ -190,9 +190,45 @@ class Prog:
         for v in self.transform_choice_scale_vars:
             v.trace('w', self.read_transform_choice_scale)
         # # # # rotate_around_line
-        self.transform_choice_frames.append((tk.Frame(), (1,1)))
+        self.transform_choice_frames.append((tk.Frame(), (3,6)))
         tmp_fr = self.transform_choice_frames[-1][0]
-        tk.Label(tmp_fr, text='No params here').grid(row=0, column=0)
+
+        self.transform_choice_line_rotate_vars = []
+        self.transform_choice_line_rotate_vars.append(tk.StringVar())
+        tk.Label(tmp_fr, text='x1:').grid(row=0, column=0)
+        tk.Entry(tmp_fr, textvar=self.transform_choice_line_rotate_vars[-1]) \
+            .grid(row=0, column=1)
+        self.transform_choice_line_rotate_vars.append(tk.StringVar())
+        tk.Label(tmp_fr, text='y1:').grid(row=0, column=2)
+        tk.Entry(tmp_fr, textvar=self.transform_choice_line_rotate_vars[-1]) \
+            .grid(row=0, column=3)
+        self.transform_choice_line_rotate_vars.append(tk.StringVar())
+        tk.Label(tmp_fr, text='z1:').grid(row=0, column=4)
+        tk.Entry(tmp_fr, textvar=self.transform_choice_line_rotate_vars[-1]) \
+            .grid(row=0, column=5)
+
+        self.transform_choice_line_rotate_vars.append(tk.StringVar())
+        tk.Label(tmp_fr, text='x2:').grid(row=1, column=0)
+        tk.Entry(tmp_fr, textvar=self.transform_choice_line_rotate_vars[-1]) \
+            .grid(row=1, column=1)
+        self.transform_choice_line_rotate_vars.append(tk.StringVar())
+        tk.Label(tmp_fr, text='y2:').grid(row=1, column=2)
+        tk.Entry(tmp_fr, textvar=self.transform_choice_line_rotate_vars[-1]) \
+            .grid(row=1, column=3)
+        self.transform_choice_line_rotate_vars.append(tk.StringVar())
+        tk.Label(tmp_fr, text='z2:').grid(row=1, column=4)
+        tk.Entry(tmp_fr, textvar=self.transform_choice_line_rotate_vars[-1]) \
+            .grid(row=1, column=5)
+
+        # angle
+        self.transform_choice_line_rotate_vars.append(tk.StringVar())
+        tk.Label(tmp_fr, text='angle:').grid(row=2, column=0)
+        tk.Entry(tmp_fr, textvar=self.transform_choice_line_rotate_vars[-1]) \
+            .grid(row=2, column=1)
+
+        for c in self.transform_choice_line_rotate_vars:
+            c.trace("w", self.read_transform_choice_line_rotate)
+
         # # # # reflect
         self.transform_choice_frames.append((tk.Frame(), (1,2)))
         tmp_fr = self.transform_choice_frames[-1][0]
@@ -251,6 +287,27 @@ class Prog:
         self.choice_transform = lib.Transform.scale(*xyz)
         self.draw()
 
+    def read_transform_choice_line_rotate(self, *args):
+        xyz1 = []
+        xyz2 = []
+        angle = 0.
+        try:
+            for i in range(3):
+                xyz1.append(float(self.transform_choice_line_rotate_vars[i].get()))
+            for i in range(3, 6):
+                xyz2.append(float(self.transform_choice_line_rotate_vars[i].get()))
+        except:
+            xyz1 = [0, -1, 0]
+            xyz2 = [0, 1, 0]
+
+        try:
+            angle = float(self.transform_choice_line_rotate_vars[-1].get())
+        except:
+            angle = 0.
+
+        self.choice_transform = lib.Transform.rotate_around_line(lib.Line(xyz1, xyz2), angle)
+        self.draw()
+
     def change_transform_choice(self, *args):
         tr = self.transform_choice_var.get()
         idx = self.transform_choice_list.index(tr)
@@ -265,6 +322,8 @@ class Prog:
             self.read_transform_choice_rotate()
         elif idx == 3:
             self.read_transform_choice_scale()
+        elif idx == 4:
+            self.read_transform_choice_line_rotate()
         elif idx == 5:
             self.read_transform_choice_reflect()
 
